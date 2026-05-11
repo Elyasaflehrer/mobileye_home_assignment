@@ -29,8 +29,17 @@ def _require(name: str) -> str:
     return value
 
 
-GITLAB_URL: str = _require("GITLAB_URL").rstrip("/")
+GITLAB_URL: str = _require("GITLAB_URL").strip().rstrip("/")
 GITLAB_TOKEN: str = _require("GITLAB_TOKEN")
+# Warn at startup: httpx rejects HTTP header values containing whitespace,
+# so a polluted token will crash every request later with a cryptic error
+# that also leaks the token bytes into the response body. Surfacing it once
+# here makes the root cause obvious in the logs.
+if any(c.isspace() for c in GITLAB_TOKEN):
+    sys.stderr.write(
+        "WARNING: GITLAB_TOKEN contains whitespace or newline characters "
+        "(common copy-paste error); requests will fail until it is fixed\n"
+    )
 
 LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO").upper()
 GITLAB_API_BASE: str = f"{GITLAB_URL}/api/v4"
