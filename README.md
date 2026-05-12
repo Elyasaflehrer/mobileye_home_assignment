@@ -1,8 +1,7 @@
 # GitLab Yearly Report Service
 
-Read-only HTTP service over the GitLab REST API v4. Returns issues or merge
-requests created in a given year, scoped to a single project or to the whole
-GitLab instance.
+Returns GitLab issues and merge requests created in a given year, scoped
+to a single project or to the whole instance.
 
 ## Requirements
 
@@ -73,8 +72,8 @@ curl 'http://localhost:8080/issues?year=2025'
 |---|---|
 | Missing `year` | 400 |
 | Invalid `year` (not a 4-digit value, YYYY) | 400 |
-| GitLab returned 401 | 401 |
-| GitLab returned 403 | 403 |
+| GitLab returned 401 (authentication failed) | 401 |
+| GitLab returned 403 (permission denied) | 403 |
 | GitLab returned 404 (project not found) | 404 |
 | Upstream failure (429, 5xx, network, timeout) | 502 |
 
