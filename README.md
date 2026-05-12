@@ -78,3 +78,69 @@ curl 'http://localhost:8080/issues?year=2025'
 | Upstream failure (429, 5xx, network, timeout) | 502 |
 
 All error bodies use FastAPI's default shape: `{"detail": "<message>"}`.
+
+## MCP server (bonus)
+
+The repository also ships an MCP server (`mcp_server/`) that exposes the same
+two reporting functions as MCP tools. The fastest way to verify it works is
+the **MCP inspector** — a small web UI that spawns the server as a subprocess
+and lets you call its tools interactively.
+
+### Prerequisites
+
+Beyond the project's normal `pip install -r requirements.txt`, one extra install:
+
+```bash
+pip install uv
+```
+
+`uv` is the Python spawn helper that `mcp dev` uses to launch the server.
+The inspector UI itself is a Node.js package that `mcp dev` downloads on
+first use via `npx` — requires **Node.js / npm** on your system; you'll be
+prompted to confirm the one-time download.
+
+### Run the inspector
+
+Make sure `GITLAB_URL` and `GITLAB_TOKEN` are available — either in `.env`
+at the project root or as shell exports.
+
+```bash
+mcp dev mcp_server/server.py
+```
+
+On first run, `npx` prompts to download the inspector — confirm with `y`.
+The terminal then prints a URL (typically `http://localhost:6274`); open it
+in your browser. You should see:
+
+- Connection status: **Connected**
+- Server name: **`gitlab-yearly-report`**
+
+The server's own log lines appear in the terminal running `mcp dev` (logs
+go to stderr — stdout is reserved for the MCP protocol).
+
+### Try a tool
+
+1. In the inspector UI, click **Tools** to see the registered tools.
+2. Pick **`get_issues_by_year`** and fill in:
+   - `year`: a 4-digit year, e.g. `2025`.
+   - `project_id_or_path`: a project path like `mygroup/myproj`, a numeric
+     project ID, or leave blank to query the whole instance.
+3. Click **Call Tool**. The response panel shows the raw GitLab JSON array.
+
+Meanwhile, the terminal running `mcp dev` logs a summary line like:
+
+```
+... INFO mcp_server — GitLab fetch: path=/projects/.../issues pages=1 items=N duration=0.42s
+```
+
+`get_merge_requests_by_year` works the same way, with the same parameters.
+
+### Tools provided
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `get_issues_by_year` | `year: int`, `project_id_or_path: str \| int \| None = None` | GitLab issues created in *year*; optional project scope. |
+| `get_merge_requests_by_year` | `year: int`, `project_id_or_path: str \| int \| None = None` | GitLab merge requests created in *year*; optional project scope. |
+
+Same signatures and return shape (raw GitLab JSON array) as the `/issues`
+and `/merge-requests` HTTP routes.
